@@ -11,10 +11,8 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#define threshold       120
-#define REPEAT_TIMES    10
 #define PAGE_SIZE       4096    // bytes
-#define SET_SIZE        64      // bytes (per way)
+#define stride          8192
 
 int offset[] = {12, 135, 235, 345, 465, 568, 648, 771};
 

@@ -14,7 +14,7 @@
 #include <assert.h>
 
 #define PAGE_SIZE   4096
-#define NUM_TRAIL   1
+#define stride      8192
 
 int offset[] = {12,135,235,345,465,568,648,771};
 
@@ -50,11 +50,12 @@ void sleep(int i){
     }
 }
 
+char getSentChar(const uint8_t* base_addr);
+
 int main(int argc, char** argv){
 
     // Allocate memory and get the base address
     int map_length = PAGE_SIZE * 17;
-    int stride = PAGE_SIZE*2;
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
     const uint8_t* base_addr = (const uint8_t*) mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
@@ -103,28 +104,26 @@ char getSentChar(const uint8_t* base_addr){
             res_time[j] = 0;
         }
 
-        for (int i=0; i<NUM_TRAIL; i++){
-            // flush every lines in every sets
-            for(int j=0; j<8; j++){
-                const uint8_t* flush_addr = base_addr + j * stride + offset[j];
-                flush(flush_addr);
-            }
+        // flush every lines in every sets
+        for(int j=0; j<8; j++){
+            const uint8_t* flush_addr = base_addr + j * stride + offset[j];
+            flush(flush_addr);
+        }
 
-            sleep(100);
+        sleep(100);
 
-            // probe every lines in every sets
-            // prefetching works after print 8 res_time_new
-            for(int j=0; j<8; j++){
-                const uint8_t* probe_addr = base_addr + j * stride + offset[j];
-                res_time[j] += probe(probe_addr);
-            }
+        // probe every lines in every sets
+        // prefetching works after print 8 res_time_new
+        for(int j=0; j<8; j++){
+            const uint8_t* probe_addr = base_addr + j * stride + offset[j];
+            res_time[j] += probe(probe_addr);
         }
 
         for (int i=0; i<8; i++){
-            if (res_time[i] / NUM_TRAIL < 200){ // hit
+            if (res_time[i] < 200){ // hit
                 curr_char = curr_char | (1 << i);
             }
         }
     }
-    return a;
+    return curr_char;
 }

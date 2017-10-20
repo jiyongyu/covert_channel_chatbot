@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #define PAGE_SIZE   4096
+#define NUM_TRAIL   6
 
 int offset[] = {12,135,235,345,465,568,648,771};
 
@@ -80,7 +81,7 @@ int main(int argc, char** argv){
     //}
     
 
-    for (int i=0; i<10; i++){
+    for (int i=0; i<NUM_TRAIL; i++){
         for (int j=0; j<8; j++){
             res_time[j] = 999;
         }
@@ -90,7 +91,7 @@ int main(int argc, char** argv){
             flush(flush_addr);
         }
 
-        sleep(2000);
+        sleep(1000);
 
         // probe every lines in every sets
         // prefetching works after print 8 res_time_new
@@ -98,10 +99,13 @@ int main(int argc, char** argv){
             const uint8_t* probe_addr = base_addr + j * stride + offset[j];
             res_time[j] = probe(probe_addr);
         }
-
-        for (int j=0; j<8; j++){
-            printf("j = %d, respond time = %d\n", j, res_time[j]);
-        }
     }
+
+    char a = 0;
+    for (int i=0; i<8; i++){
+        if (res_time[i] / NUM_TRAIL < 200) // hit
+            a = a | (1 << i);
+    }
+    printf("%c\n", a);
     return 0;
 }

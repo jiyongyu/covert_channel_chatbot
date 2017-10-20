@@ -70,23 +70,27 @@ int main(int argc, char** argv){
     }
 
     printf("%c\n", getSentChar(base_addr));// test functionality
-    //char text_buf[128];
-    //text_len = 0;
+    char text_buf[128];
+    char temp_char;
+    text_len = 0;
 
 
 
-    //printf("Please press enter.\n");
-    //char text_buf[2];
-    //fgets(text_buf, sizeof(text_buf), stdin);
+    printf("Please press enter.\n");
+    char text_buf[2];
+    fgets(text_buf, sizeof(text_buf), stdin);
 
-    //printf("Receiver now listening.\n");
+    printf("Receiver now listening.\n");
 
-    //bool listening = true;
-    //while(listening){
+    bool listening = true;
+    while(listening){
+        temp_char = getSentChar(base_addr);
+        if(temp_char != 0){
+            printf("get char %c\n", temp_char);
+        }
+    }
 
-    //}
-
-    //printf("Receiver finished.\n");
+    printf("Receiver finished.\n");
 
     return 0;
 }

@@ -13,6 +13,7 @@
 
 #define PAGE_SIZE       4096    // bytes
 #define stride          8192
+#define SEND_TIMES      1000
 
 int offset[] = {12, 135, 235, 345, 465, 568, 648, 771};
 
@@ -61,32 +62,34 @@ int main(int argc, char** argv){
     char text_buf[] = "send me\n";
     char char_sent = '0';
     char foo;
-    for(int i=0; i<128; i++){
-        if (char_sent == '\n')
-            break;
+    
+    printf("Please type a message.\n");
+    bool sending = true;
+    while(sending){
+        char text_buf[128];
+        fgets(text_buf, sizeof(text_buf), stdin);
+ 
+        // send text
+        for(int i=0; i<128; i++){
+            if (char_sent == '\n')
+                break;
 
-        while(1){
-            char_sent = text_buf[i];
-            // send char_sent
-            for(int j=0; j<8; j++){
-                if(char_sent & 0x1) {   // send 1
-                    const uint8_t* target_addr = base_addr + j * stride + offset[j];
-                    foo = *target_addr; 
+            for(int r=0; r<SEND_TIMES; r++){
+                char_sent = text_buf[i];
+                // send char_sent
+                for(int j=0; j<8; j++){
+                    if(char_sent & 0x1) {   // send 1
+                        const uint8_t* target_addr = base_addr + j * stride + offset[j];
+                        foo = *target_addr; 
+                    }
+                    char_sent = char_sent >> 1;
                 }
-                char_sent = char_sent >> 1;
             }
         }
+
     }
-    
-    //printf("Please type a message.\n");
-    //bool sending = true;
-    //while(sending){
-        //char text_buf[128];
-        //fgets(text_buf, sizeof(text_buf), stdin);
 
-    //}
-
-    //printf("Sender finished.\n");
+    printf("Sender finished.\n");
 
     return 0;
 }

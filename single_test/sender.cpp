@@ -11,8 +11,10 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#define PAGE_SIZE       4096    // bytes
-#define STRIDE          8192
+
+int PAGE_SIZE = 4096;
+
+int STRIDE = PAGE_SIZE * 2;
 
 int offset[] = {12, 135, 235, 345, 465, 568, 648, 771};
 
@@ -44,7 +46,6 @@ int main(int argc, char** argv){
 
     // Allocate the memory and get base address
     int map_length = PAGE_SIZE * 17;
-    int stride = PAGE_SIZE*2;
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
     const uint8_t* base_addr = (const uint8_t*)mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);

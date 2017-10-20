@@ -13,13 +13,14 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#define PAGE_SIZE   4096
-#define STRIDE      8192
+int PAGE_SIZE = 4096;
+
+int STRIDE = PAGE_SIZE * 2;
 
 int offset[] = {12,135,235,345,465,568,648,771};
 
-inline unsigned long probe(const uint8_t* addr){
-    volatile unsigned long time;
+inline uint64_t probe(const uint8_t* addr){
+    volatile uint64_t time;
     asm __volatile__(
         " mfence            \n"
         " lfence            \n"
@@ -69,8 +70,7 @@ int main(int argc, char** argv){
         flush(base_addr + i);
     }
 
-    char c = getSentChar(base_addr);
-    printf("%c, %d\n", c, (int)c);// test functionality
+    printf("%c\n", getSentChar(base_addr));// test functionality
 
     return 0;
 }
@@ -104,7 +104,6 @@ char getSentChar(const uint8_t* base_addr){
         }
 
         for (int i=0; i<8; i++){
-            printf("res_time[%d] = %d\n", i, res_time[i]);
             if (res_time[i] < 200){ // hit
                 curr_char = curr_char | (1 << i);
             }

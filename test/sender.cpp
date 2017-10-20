@@ -16,7 +16,7 @@
 #define PAGE_SIZE       4096    // bytes
 #define SET_SIZE        64      // bytes (per way)
 
-int offsets[] = {12, 135, 235, 345, 465, 568, 648, 771};
+int offset[] = {12, 135, 235, 345, 465, 568, 648, 771};
 
 inline unsigned long probe(const uint8_t* addr){
     volatile unsigned long time;
@@ -45,7 +45,8 @@ inline void flush(const uint8_t* addr){
 int main(int argc, char** argv){
 
     // Allocate the memory and get base address
-    int map_length = PAGE_SIZE * 9;
+    int map_length = PAGE_SIZE * 17;
+    int stride = PAGE_SIZE*2;
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
     const uint8_t* base_addr = (const uint8_t*)mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
@@ -54,7 +55,7 @@ int main(int argc, char** argv){
     printf("used base addr = %lx\n", base_addr);
 
     // flush all the memory
-    for (int i=0; i<PAGE_SIZE*8; i++){
+    for (int i=0; i<PAGE_SIZE*17; i++){
         flush(base_addr + i);
     }
 
@@ -71,7 +72,7 @@ int main(int argc, char** argv){
             // send char_sent
             for(int j=0; j<8; j++){
                 if(char_sent & 0x1) {   // send 1
-                    const uint8_t* target_addr = base_addr + j * PAGE_SIZE + j;
+                    const uint8_t* target_addr = base_addr + j * stride + offset[j];
                     foo = *target_addr; 
                 }
                 char_sent = char_sent >> 1;

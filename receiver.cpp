@@ -9,6 +9,7 @@
 #include "util.hpp"
 #include "inttypes.h"
 #include "algorithm"    // std::min
+#include <sys/mann.h>
 
 #define PAGE_SIZE   4096
 #define SET_SIZE    64

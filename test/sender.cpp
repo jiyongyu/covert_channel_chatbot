@@ -2,11 +2,12 @@
  *
  *      Using Flush + Reload to perform covert-channel communication
  *      between sender + receiver
- * 
+ *
  *      sender side code
  *
  */
 #include "util.hpp"
+#include <sys/mman.h>
 
 #define threshold       120
 #define REPEAT_TIMES    10
@@ -42,18 +43,13 @@ inline void flush(const uint8_t* addr){
 int main(int argc, char** argv){
 
     // Allocate the memory and get base address
-    uint8_t* base_addr = (uint8_t*) malloc(sizeof(uint8_t) * PAGE_SIZE * 9);
+    int map_length = PAGE_SIZE * 9;
+    int fd = open("/bin/ls", O_RDONLY);
+    assert(fd > 0);
+    uint8_t* base_addr = mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
     printf("original base addr = %lx\n", base_addr);
     base_addr = (uint8_t*) ((( (uintptr_t)base_addr >> 12) + 1) << 12);
     printf("used base addr = %lx\n", base_addr);
-
-    // Initialize the memory pages
-    for (int i=0; i<8; i++){
-        for (int j=0; j<PAGE_SIZE; j++){
-            // the nth page has all bytes == n
-            base_addr[i * PAGE_SIZE + j] = i;
-        }
-    }
 
     // flush all the memory
     for (int i=0; i<PAGE_SIZE*8; i++){
@@ -73,7 +69,7 @@ int main(int argc, char** argv){
             // send char_sent
             for(int j=0; j<8; j++){
                 if(char_sent & 0x1) {   // send 1
-                    uint8_t* target_addr = base_addr + j * PAGE_SIZE + j * SET_SIZE;
+                    uint8_t* target_addr = base_addr + j * PAGE_SIZE + j;
                     foo = *target_addr; 
                 }
                 char_sent = char_sent >> 1;

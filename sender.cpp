@@ -2,11 +2,12 @@
  *
  *      Using Flush + Reload to perform covert-channel communication
  *      between sender + receiver
- * 
+ *
  *      sender side code
  *
  */
 #include "util.hpp"
+#include <sys/mman.h>
 
 #define threshold       120
 #define REPEAT_TIMES    10

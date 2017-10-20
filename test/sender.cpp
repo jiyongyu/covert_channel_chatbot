@@ -8,6 +8,8 @@
  */
 #include "util.hpp"
 #include <sys/mman.h>
+#include <fcntl.h>
+#include <assert.h>
 
 #define threshold       120
 #define REPEAT_TIMES    10
@@ -46,7 +48,7 @@ int main(int argc, char** argv){
     int map_length = PAGE_SIZE * 9;
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
-    uint8_t* base_addr = mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
+    const uint8_t* base_addr = (const uint8_t*)mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
     printf("original base addr = %lx\n", base_addr);
     base_addr = (uint8_t*) ((( (uintptr_t)base_addr >> 12) + 1) << 12);
     printf("used base addr = %lx\n", base_addr);

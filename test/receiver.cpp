@@ -9,8 +9,9 @@
 #include "util.hpp"
 #include "inttypes.h"
 #include "algorithm"    // std::min
-#include <sys/mann.h>
-#include <fnctl>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <assert.h>
 
 #define PAGE_SIZE   4096
 
@@ -54,7 +55,7 @@ int main(int argc, char** argv){
     int map_length = PAGE_SIZE * 9;
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
-    uint8_t* base_addr = mmap(NULL, PAGE_SIZE * 9, PROT_READ, MAP_SHARED, fd, 0);
+    const uint8_t* base_addr = (const uint8_t*) mmap(NULL, PAGE_SIZE * 9, PROT_READ, MAP_SHARED, fd, 0);
     assert(base_addr != MAP_FAILED);
     printf("original base addr = %lx\n", base_addr);
     base_addr = (uint8_t*)((( (uintptr_t)base_addr >> 12) + 1) << 12);

@@ -79,6 +79,17 @@ int main(int argc, char** argv){
             }
         }
     }
+    
+    printf("Please type a message.\n");
+    bool sending = true;
+    while(sending){
+        char text_buf[128];
+        fgets(text_buf, sizeof(text_buf), stdin);
+
+    }
+
+    printf("Sender finished.\n");
+
     return 0;
 }
 

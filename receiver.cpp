@@ -74,17 +74,9 @@ int main(int argc, char** argv){
     // test functionality
     unsigned long res_time[NUM_SETS];
     unsigned long res_time_new = 0;
-    //for (int i=0; i<10; i++){
-        //for (int j=0; j<8; j++){
-            ////uint8_t *target_addr = base_addr + j * 4096 + offsets[j];
-            ////uint8_t foo = *target_addr;
-            //res_time = probe(base_addr + j * PAGE_SIZE + offsets[j]);
 
-            //printf("j = %d, respond time = %d\n", j, res_time);
-        //}
-    //}
-    
-
+    for(int sleep = 1000; sleep < 20000; sleep += 100){
+        for(int r=0; r<1000; r++){
     for (int i=0; i<10; i++){
         for (int j=0; j<NUM_SETS; j++){
             res_time[NUM_SETS] = 999;
@@ -111,6 +103,8 @@ int main(int argc, char** argv){
 
         for (int j=0; j<NUM_SETS; j++){
             printf("j = %d, respond time = %d\n", j, res_time[j]);
+        }
+    }
         }
     }
     return 0;

@@ -68,47 +68,63 @@ int main(int argc, char** argv){
         flush(base_addr + i);
     }
 
-    // test functionality
-    unsigned long res_time[8];
-    for (int j=0; j<8; j++){
-        res_time[j] = 0;
-    }
-    for (int i=0; i<NUM_TRAIL; i++){
-        // flush every lines in every sets
-        for(int j=0; j<8; j++){
-            const uint8_t* flush_addr = base_addr + j * stride + offset[j];
-            flush(flush_addr);
-        }
+    printf("%c\n", getSentChar(base_addr));// test functionality
+    //char text_buf[128];
+    //text_len = 0;
 
-        sleep(100);
 
-        // probe every lines in every sets
-        // prefetching works after print 8 res_time_new
-        for(int j=0; j<8; j++){
-            const uint8_t* probe_addr = base_addr + j * stride + offset[j];
-            res_time[j] += probe(probe_addr);
-        }
-    }
 
-    char a = (char)0;
-    for (int i=0; i<8; i++){
-        if (res_time[i] / NUM_TRAIL < 200){ // hit
-            a = a | (1 << i);
-        }
-    }
-    printf("%c\n", a);
+    //printf("Please press enter.\n");
+    //char text_buf[2];
+    //fgets(text_buf, sizeof(text_buf), stdin);
 
-    printf("Please press enter.\n");
-    char text_buf[2];
-    fgets(text_buf, sizeof(text_buf), stdin);
+    //printf("Receiver now listening.\n");
 
-    printf("Receiver now listening.\n");
+    //bool listening = true;
+    //while(listening){
 
-    bool listening = true;
-    while(listening){
-    }
+    //}
 
-    printf("Receiver finished.\n");
+    //printf("Receiver finished.\n");
 
     return 0;
+}
+
+
+char getSentChar(const uint8_t* base_addr){
+    unsigned long res_time[8];
+    char prev_char = (char) 1;
+    char curr_char = (char) 0;
+    while(prev_char != curr_char){
+        prev_char = curr_char;
+        curr_char = (char) 0;
+
+        for (int j=0; j<8; j++){
+            res_time[j] = 0;
+        }
+
+        for (int i=0; i<NUM_TRAIL; i++){
+            // flush every lines in every sets
+            for(int j=0; j<8; j++){
+                const uint8_t* flush_addr = base_addr + j * stride + offset[j];
+                flush(flush_addr);
+            }
+
+            sleep(100);
+
+            // probe every lines in every sets
+            // prefetching works after print 8 res_time_new
+            for(int j=0; j<8; j++){
+                const uint8_t* probe_addr = base_addr + j * stride + offset[j];
+                res_time[j] += probe(probe_addr);
+            }
+        }
+
+        for (int i=0; i<8; i++){
+            if (res_time[i] / NUM_TRAIL < 200){ // hit
+                curr_char = curr_char | (1 << i);
+            }
+        }
+    }
+    return a;
 }

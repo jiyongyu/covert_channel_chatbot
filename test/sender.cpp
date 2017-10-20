@@ -71,7 +71,7 @@ int main(int argc, char** argv){
             // send char_sent
             for(int j=0; j<8; j++){
                 if(char_sent & 0x1) {   // send 1
-                    uint8_t* target_addr = base_addr + j * PAGE_SIZE + j;
+                    const uint8_t* target_addr = base_addr + j * PAGE_SIZE + j;
                     foo = *target_addr; 
                 }
                 char_sent = char_sent >> 1;

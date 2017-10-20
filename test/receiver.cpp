@@ -86,7 +86,7 @@ int main(int argc, char** argv){
         }
         // flush every lines in every sets
         for(int j=0; j<8; j++){
-            uint8_t* flush_addr = base_addr + j * PAGE_SIZE + j;
+            const uint8_t* flush_addr = base_addr + j * PAGE_SIZE + j;
             flush(flush_addr);
         }
 
@@ -95,11 +95,11 @@ int main(int argc, char** argv){
         // probe every lines in every sets
         // prefetching works after print 8 res_time_new
         for(int j=0; j<8; j++){
-            uint8_t* probe_addr = base_addr + j * PAGE_SIZE + j;
+            const uint8_t* probe_addr = base_addr + j * PAGE_SIZE + j;
             res_time[j] = probe(probe_addr);
         }
 
-        for (int j=0; j<NUM_SETS; j++){
+        for (int j=0; j<8; j++){
             printf("j = %d, respond time = %d\n", j, res_time[j]);
         }
     }

@@ -2,18 +2,18 @@
 
 ## 1. Usage
 
-This chatbot is extremely easy to use. After 'make', you can run two clients (by running ./client) to build this 
-covert channel. You will need to turn one client into a RECEIVER by typing 'recv' and pressing enter. Type some 
+This chatbot is extremely easy to use. After 'make', you can run two clients (by running two ./client simutaneously) 
+to build this covert channel. You will need to turn one client into a RECEIVER by typing 'recv' and pressing enter. Type some 
 characters on the SENDER side and press enter. The message will be magically transmitted to the RECEIVER as you will see. 
 
-The SENDER will also show the bandwidth(B/s) of transmission.
+The SENDER will also show the bandwidth (bytes/second) of transmission (typically over 700 bytes/second).
 
 ## 2. Extra missions finished
 
 We finished:
 1) TRX. -- 10pts
 2) SpeedRun. -- 10pts (we were able to improve the bandwidth as more than 10x the TA solution)
-3) AnyCore. -- 30pts (no need to use taskset)
+3) AnyCore. -- 30pts (no need to use taskset since it targets LLC)
 4) AnyCore++.. -- 20pts (we did not use RDRAND/RDSEED)
 
 ## 3. Challenges

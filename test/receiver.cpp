@@ -13,8 +13,9 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#define PAGE_SIZE   4096
-#define stride      8192
+int PAGE_SIZE = 4096;
+
+int STRIDE = PAGE_SIZE * 2;
 
 int offset[] = {12,135,235,345,465,568,648,771};
 
@@ -52,6 +53,8 @@ void sleep(int i){
 
 char getSentChar(const uint8_t* base_addr);
 
+void flushMem(const uint8_t* base_addr, int size_in_bytes);
+
 int main(int argc, char** argv){
 
     // Allocate memory and get the base address
@@ -65,16 +68,7 @@ int main(int argc, char** argv){
     printf("used base addr = %lx\n", base_addr);
 
     // flush all the memory
-    for (int i=0; i<PAGE_SIZE*17; i++){
-        flush(base_addr + i);
-    }
-
-    printf("%c\n", getSentChar(base_addr));// test functionality
-    char sent_text[128];
-    char temp_char;
-    int text_len = 0;
-
-
+    flushMem(base_addr, PAGE_SIZE*16);
 
     printf("Please press enter.\n");
     char text_buf[2];
@@ -83,11 +77,20 @@ int main(int argc, char** argv){
     printf("Receiver now listening.\n");
 
     bool listening = true;
+    bool get_mark = false;
     while(listening){
+        char temp_char;
         temp_char = getSentChar(base_addr);
         if(temp_char != 0){
-            printf("get char %c\n", temp_char);
+            if(get_mark && temp_char != 1){
+                printf("%c\n", temp_char, (uint8_t)temp_char);
+                get_mark = false;
+            }
+            if(temp_char == 1){
+                get_mark = true;
+            }
         }
+        flushMem(base_addr, PAGE_SIZE*16);
     }
 
     printf("Receiver finished.\n");
@@ -95,6 +98,10 @@ int main(int argc, char** argv){
     return 0;
 }
 
+void flushMem(const uint8_t* base_addr, int size_in_bytes){
+    for (int i=0; i<size_in_bytes; i++)
+        flush(base_addr + i);
+}
 
 char getSentChar(const uint8_t* base_addr){
     unsigned long res_time[8];
@@ -110,16 +117,16 @@ char getSentChar(const uint8_t* base_addr){
 
         // flush every lines in every sets
         for(int j=0; j<8; j++){
-            const uint8_t* flush_addr = base_addr + j * stride + offset[j];
+            const uint8_t* flush_addr = base_addr + j * STRIDE + offset[j];
             flush(flush_addr);
         }
 
-        sleep(100);
+        sleep(10);
 
         // probe every lines in every sets
         // prefetching works after print 8 res_time_new
         for(int j=0; j<8; j++){
-            const uint8_t* probe_addr = base_addr + j * stride + offset[j];
+            const uint8_t* probe_addr = base_addr + j * STRIDE + offset[j];
             res_time[j] += probe(probe_addr);
         }
 

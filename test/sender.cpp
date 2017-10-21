@@ -10,10 +10,14 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <time.h>
+#include <string.h>
 
-#define PAGE_SIZE       4096    // bytes
-#define STRIDE           8192
-#define SEND_TIMES      10000
+int SEND_TIMES = 500000;
+
+int PAGE_SIZE = 4096;
+
+int STRIDE = PAGE_SIZE * 2;
 
 int offset[] = {12, 135, 235, 345, 465, 568, 648, 771};
 
@@ -41,6 +45,8 @@ inline void flush(const uint8_t* addr){
     asm __volatile__("mfence\nclflush 0(%0)" : : "r"(addr) :);
 }
 
+void flushMem(const uint8_t* base_addr, int size_in_bytes);
+
 int main(int argc, char** argv){
 
     // Allocate the memory and get base address
@@ -54,12 +60,9 @@ int main(int argc, char** argv){
     printf("used base addr = %lx\n", base_addr);
 
     // flush all the memory
-    for (int i=0; i<PAGE_SIZE*17; i++){
-        flush(base_addr + i);
-    }
+    flushMem(base_addr, PAGE_SIZE * 16);
 
     // test functionality
-    char text_buf[] = "send me\n";
     char char_sent = '0';
     char foo;
     
@@ -67,12 +70,27 @@ int main(int argc, char** argv){
     bool sending = true;
     while(sending){
         char text_buf[128];
+        for(int i=0; i<128; i++){
+            text_buf[i] = 0;
+        }
         fgets(text_buf, sizeof(text_buf), stdin);
+        clock_t begin = clock();
+
+        printf("text_buf = %s\n", text_buf);
  
         // send text
         for(int i=0; i<128; i++){
-            if (char_sent == '\n')
-                break;
+            for(int r=0; r<SEND_TIMES; r++){
+                char_sent = 1;
+                // send char_sent
+                for(int j=0; j<8; j++){
+                    if(char_sent & 0x1) {   // send 1
+                        const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
+                        foo = *target_addr;
+                    }
+                    char_sent = char_sent >> 1;
+                }
+            }
 
             for(int r=0; r<SEND_TIMES; r++){
                 char_sent = text_buf[i];
@@ -80,13 +98,18 @@ int main(int argc, char** argv){
                 for(int j=0; j<8; j++){
                     if(char_sent & 0x1) {   // send 1
                         const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
-                        foo = *target_addr; 
+                        foo = *target_addr;
                     }
                     char_sent = char_sent >> 1;
                 }
             }
+            if (text_buf[i] == '\n')
+                break;
         }
 
+        clock_t end = clock();
+        double bytes_per_sec = strlen(text_buf) / ((double)(end - begin) / CLOCKS_PER_SEC);
+        printf("%d chars, bytes_per_sec = %f\n", strlen(text_buf), bytes_per_sec);
     }
 
     printf("Sender finished.\n");
@@ -94,3 +117,8 @@ int main(int argc, char** argv){
     return 0;
 }
 
+
+void flushMem(const uint8_t* base_addr, int size_in_bytes){
+    for(int i=0; i<size_in_bytes; i++)
+        flush(base_addr + i);
+}

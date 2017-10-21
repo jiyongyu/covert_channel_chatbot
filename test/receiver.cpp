@@ -12,6 +12,12 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <string.h>
+
+int RECV_MODE = 0;
+int SEND_MODE = 1;
+
+int SEND_TIMES = 50000;
 
 int PAGE_SIZE = 4096;
 
@@ -43,13 +49,7 @@ inline void flush(const uint8_t* addr){
     asm __volatile__("mfence\nclflush 0(%0)" : : "r"(addr) :);
 }
 
-void sleep(int i){
-    for (int ii =0; ii < i; ii++){
-        for (int jj=0; jj<10000; jj++){
-            ;
-        }
-    }
-}
+void sleep(int i);
 
 char getSentChar(const uint8_t* base_addr);
 
@@ -63,37 +63,82 @@ int main(int argc, char** argv){
     assert(fd > 0);
     const uint8_t* base_addr = (const uint8_t*) mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
     assert(base_addr != MAP_FAILED);
-    printf("original base addr = %lx\n", base_addr);
     base_addr = (uint8_t*)((( (uintptr_t)base_addr >> 12) + 1) << 12);
-    printf("used base addr = %lx\n", base_addr);
 
     // flush all the memory
     flushMem(base_addr, PAGE_SIZE*16);
 
-    printf("Please press enter.\n");
-    char text_buf[2];
-    fgets(text_buf, sizeof(text_buf), stdin);
 
-    printf("Receiver now listening.\n");
+    char char_sent = '0';
+    char char_recv = '0';
+    char foo = '0';
+    bool flag = false;
+    bool mode = SEND_MODE;
 
-    bool listening = true;
-    bool get_mark = false;
-    while(listening){
-        char temp_char;
-        temp_char = getSentChar(base_addr);
-        if(temp_char != 0){
-            if(get_mark && temp_char != 1){
-                printf("%c\n", temp_char, (uint8_t)temp_char);
-                get_mark = false;
-            }
-            if(temp_char == 1){
-                get_mark = true;
-            }
+
+    while(1){
+        if (mode == SEND_MODE){
+            printf("You're in SENDER mode. Press 'recv' to enter RECEIVER mode.\n");
         }
-        flushMem(base_addr, PAGE_SIZE*16);
-    }
 
-    printf("Receiver finished.\n");
+        if (mode == RECV_MODE){
+            char_recv = getSentChar(base_addr);
+            if(flag && char_recv != 1){
+                printf("%c\n", char_recv);
+                flag = false;
+                if(char_recv == '\n')
+                    mode = SEND_MODE;
+            }
+            if(char_recv == 1){
+                flag = true;
+            }
+        } else if (mode == SEND_MODE){
+            char text_buf[128];
+            for(int i=0; i<128; i++){
+                text_buf[i] = 0;
+            }
+            fgets(text_buf, sizeof(text_buf), stdin);
+            if(strcmp(text_buf, "recv\n") == 0){
+                printf("You're in RECEIVER mode. Now send message on the other end.\n");
+                mode = RECV_MODE;
+                continue;
+            }
+            // send text
+            clock_t begin = clock();
+            for(int i=0; i<128; i++){
+                for(int r=0; r<SEND_TIMES; r++){
+                    char_sent = 1;
+                    // send char_sent
+                    for(int j=0; j<8; j++){
+                        if(char_sent & 0x1) {   // send 1
+                            const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
+                            foo = *target_addr;
+                        }
+                        char_sent = char_sent >> 1;
+                    }
+                }
+
+                for(int r=0; r<SEND_TIMES; r++){
+                    char_sent = text_buf[i];
+                    // send char_sent
+                    for(int j=0; j<8; j++){
+                        if(char_sent & 0x1) {   // send 1
+                            const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
+                            foo = *target_addr;
+                        }
+                        char_sent = char_sent >> 1;
+                    }
+                }
+                if (text_buf[i] == '\n')
+                    break;
+            }
+            clock_t end = clock();
+            double bytes_per_sec = strlen(text_buf) / ( (double)(end-begin) / CLOCKS_PER_SEC );
+            printf("%f bytes per second\n\n", bytes_per_sec);
+        } else {
+            assert(0);
+        }
+    }
 
     return 0;
 }
@@ -137,4 +182,12 @@ char getSentChar(const uint8_t* base_addr){
         }
     }
     return curr_char;
+}
+
+void sleep(int i){
+    for (int ii =0; ii < i; ii++){
+        for (int jj=0; jj<10000; jj++){
+            ;
+        }
+    }
 }

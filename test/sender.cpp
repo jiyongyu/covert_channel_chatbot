@@ -13,7 +13,10 @@
 #include <time.h>
 #include <string.h>
 
-int SEND_TIMES = 500000;
+int RECV_MODE = 0;
+int SEND_MODE = 1;
+
+int SEND_TIMES = 50000;
 
 int PAGE_SIZE = 4096;
 
@@ -45,6 +48,10 @@ inline void flush(const uint8_t* addr){
     asm __volatile__("mfence\nclflush 0(%0)" : : "r"(addr) :);
 }
 
+void sleep(int i);
+
+char getSentChar(const uint8_t* base_addr);
+
 void flushMem(const uint8_t* base_addr, int size_in_bytes);
 
 int main(int argc, char** argv){
@@ -55,64 +62,83 @@ int main(int argc, char** argv){
     int fd = open("/bin/ls", O_RDONLY);
     assert(fd > 0);
     const uint8_t* base_addr = (const uint8_t*)mmap(NULL, map_length, PROT_READ, MAP_SHARED, fd, 0);
-    printf("original base addr = %lx\n", base_addr);
     base_addr = (uint8_t*) ((( (uintptr_t)base_addr >> 12) + 1) << 12);
-    printf("used base addr = %lx\n", base_addr);
 
     // flush all the memory
     flushMem(base_addr, PAGE_SIZE * 16);
 
-    // test functionality
+
+    char char_recv = '0';
     char char_sent = '0';
-    char foo;
-    
-    printf("Please type a message.\n");
-    bool sending = true;
-    while(sending){
-        char text_buf[128];
-        for(int i=0; i<128; i++){
-            text_buf[i] = 0;
-        }
-        fgets(text_buf, sizeof(text_buf), stdin);
-        clock_t begin = clock();
+    char foo = '0';
+    bool flag = false;
+    bool mode = SEND_MODE;
 
-        printf("text_buf = %s\n", text_buf);
- 
-        // send text
-        for(int i=0; i<128; i++){
-            for(int r=0; r<SEND_TIMES; r++){
-                char_sent = 1;
-                // send char_sent
-                for(int j=0; j<8; j++){
-                    if(char_sent & 0x1) {   // send 1
-                        const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
-                        foo = *target_addr;
-                    }
-                    char_sent = char_sent >> 1;
-                }
-            }
-
-            for(int r=0; r<SEND_TIMES; r++){
-                char_sent = text_buf[i];
-                // send char_sent
-                for(int j=0; j<8; j++){
-                    if(char_sent & 0x1) {   // send 1
-                        const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
-                        foo = *target_addr;
-                    }
-                    char_sent = char_sent >> 1;
-                }
-            }
-            if (text_buf[i] == '\n')
-                break;
+    while(1){
+        if (mode == SEND_MODE){
+            printf("You're in SENDER mode. Press 'recv' to enter RECEIVER mode.\n");
         }
 
-        clock_t end = clock();
-        double bytes_per_sec = strlen(text_buf) / ((double)(end - begin) / CLOCKS_PER_SEC);
-        printf("%d chars, bytes_per_sec = %f\n", strlen(text_buf), bytes_per_sec);
+        if (mode == RECV_MODE){
+            char_recv = getSentChar(base_addr);
+            if(flag && char_recv != 1){
+                printf("%c\n", char_recv);
+                flag = false;
+                if(char_recv == '\n')
+                    mode = SEND_MODE;
+            }
+            if(char_recv == 1){
+                flag = true;
+            }
+        } else if (mode == SEND_MODE){
+            char text_buf[128];
+            for(int i=0; i<128; i++){
+                text_buf[i] = 0;
+            }
+            fgets(text_buf, sizeof(text_buf), stdin);
+            if(strcmp(text_buf, "recv\n") == 0){
+                printf("You're in RECEIVER mode. Now send message on the other end.\n");
+                mode = RECV_MODE;
+                continue;
+            }
+
+            clock_t begin = clock();
+            // send text
+            for(int i=0; i<128; i++){
+                for(int r=0; r<SEND_TIMES; r++){
+                    char_sent = 1;
+                    // send char_sent
+                    for(int j=0; j<8; j++){
+                        if(char_sent & 0x1) {   // send 1
+                            const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
+                            foo = *target_addr;
+                        }
+                        char_sent = char_sent >> 1;
+                    }
+                }
+
+                for(int r=0; r<SEND_TIMES; r++){
+                    char_sent = text_buf[i];
+                    // send char_sent
+                    for(int j=0; j<8; j++){
+                        if(char_sent & 0x1) {   // send 1
+                            const uint8_t* target_addr = base_addr + j * STRIDE + offset[j];
+                            foo = *target_addr;
+                        }
+                        char_sent = char_sent >> 1;
+                    }
+                }
+                if (text_buf[i] == '\n')
+                    break;
+            }
+
+            clock_t end = clock();
+            double bytes_per_sec = strlen(text_buf) / ( (double) (end-begin) / CLOCKS_PER_SEC );
+            printf("%f bytes per second\n\n", bytes_per_sec);
+        } else {
+            assert(0);
+        }
     }
-
-    printf("Sender finished.\n");
 
     return 0;
 }
@@ -121,4 +147,48 @@ int main(int argc, char** argv){
 void flushMem(const uint8_t* base_addr, int size_in_bytes){
     for(int i=0; i<size_in_bytes; i++)
         flush(base_addr + i);
+}
+
+char getSentChar(const uint8_t* base_addr){
+    unsigned long res_time[8];
+    char prev_char = (char) 1;
+    char curr_char = (char) 0;
+    while(prev_char != curr_char){
+        prev_char = curr_char;
+        curr_char = (char) 0;
+
+        for (int j=0; j<8; j++){
+            res_time[j] = 0;
+        }
+
+        // flush every lines in every sets
+        for(int j=0; j<8; j++){
+            const uint8_t* flush_addr = base_addr + j * STRIDE + offset[j];
+            flush(flush_addr);
+        }
+
+        sleep(10);
+
+        // probe every lines in every sets
+        // prefetching works after print 8 res_time_new
+        for(int j=0; j<8; j++){
+            const uint8_t* probe_addr = base_addr + j * STRIDE + offset[j];
+            res_time[j] += probe(probe_addr);
+        }
+
+        for (int i=0; i<8; i++){
+            if (res_time[i] < 200){ // hit
+                curr_char = curr_char | (1 << i);
+            }
+        }
+    }
+    return curr_char;
+}
+
+void sleep(int i){
+    for (int ii =0; ii < i; ii++){
+        for (int jj=0; jj<10000; jj++){
+            ;
+        }
+    }
 }

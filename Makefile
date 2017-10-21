@@ -3,7 +3,7 @@ CFLAGS=-std=c++11 -I /usr/local
 CC=g++
 
 
-TARGETS=receiver
+TARGETS=client
 UTILS=util.o 
 
 all: $(TARGETS)
@@ -21,7 +21,7 @@ $(TARGETS): %:%.o util.o
 
 
 run:
-	./receiver
+	./sender
 
 .PHONY:	clean
 

@@ -74,6 +74,8 @@ int main(int argc, char** argv){
     bool flag = false;
     bool mode = SEND_MODE;
 
+    printf("\n\n * * * Welcome to the cache side-channel world. * * * \n\n\n");
+
     while(1){
         if (mode == SEND_MODE){
             printf("You're in SENDER mode. Press 'recv' to enter RECEIVER mode.\n");
